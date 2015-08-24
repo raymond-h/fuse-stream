@@ -1,0 +1,25 @@
+{
+  "name": "fuse-stream",
+  "description": "FUSE bindings + read and write streams of data",
+  "version": "0.0.0",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "author": "Raymond Hammarling",
+  "scripts": {
+    "lint": "eslint src/ test/",
+    "test": "mocha --compilers js:babel/register test/",
+    "build": "babel -d lib/ src/",
+    "pretest": "npm run lint",
+    "prebuild": "npm run test",
+    "watch": "onchange src/ -- npm run build && echo Done",
+    "dev": "npm run watch",
+    "prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "babel": "^5.8.21",
+    "chai": "^3.2.0",
+    "eslint": "^1.2.1",
+    "mocha": "^2.2.5",
+    "onchange": "^2.0.0"
+  }
+}
