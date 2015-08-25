@@ -23,5 +23,8 @@
     "eslint-config-kellyirc": "^2.0.0",
     "mocha": "^2.2.5",
     "onchange": "^2.0.0"
+  },
+  "dependencies": {
+    "fuse-bindings": "^2.5.0"
   }
 }
