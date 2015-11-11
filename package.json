@@ -12,7 +12,7 @@
     "pretest": "npm run lint",
     "prebuild": "npm run test",
     "watch": "onchange src/ -- npm run build && echo Done",
-    "start": "babel-node src/index.js",
+    "start": "babel-node src/test.js",
     "dev": "npm run watch",
     "prepublish": "npm run build"
   },
