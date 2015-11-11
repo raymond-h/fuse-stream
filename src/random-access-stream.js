@@ -1,7 +1,4 @@
 import Promise from 'bluebird';
-import concat from 'concat-stream';
-import fs from 'fs';
-import { EventEmitter } from 'events';
 
 export class RandomAccessStream {
     constructor(streamFn, params) {
