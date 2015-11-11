@@ -49,6 +49,10 @@ const handlers = {
         }
     },
 
+    streamCreateStrategy(path, cb) {
+        cb(null, 'cache');
+    },
+
     createReadStream(p, offset, cb) {
         // we ignore 'path' - we want to output same file contents for any read
 

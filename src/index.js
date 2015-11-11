@@ -1,6 +1,7 @@
 import fuse from 'fuse-bindings';
 
 import { RandomAccessStream } from './random-access-stream';
+import { CachedAccessStream } from './cached-access-stream';
 
 // const S_IFMT = 0o170000; // bit mask for the file type bit field
 // const S_IFSOCK = 0o140000; // socket
@@ -61,10 +62,30 @@ export function fuseMount(mntPath, handlers, cb) {
             console.log('open', path, flags);
             const fd = generateFd();
 
-            datas[fd] = new RandomAccessStream((offset, params, cb) => {
-                handlers.createReadStream(path, offset, cb);
-            });
-            cb(0, fd);
+            if(handlers.streamCreateStrategy != null)
+                handlers.streamCreateStrategy(path, setupFile);
+
+            else setupFile(null, 'recreate');
+
+            function setupFile(err, strat) {
+                if(err != null) {
+                    console.error(err.stack);
+                    return cb(fuse.EIO);
+                }
+
+                if(strat == null || strat === 'recreate') {
+                    datas[fd] = new RandomAccessStream((offset, params, cb) => {
+                        handlers.createReadStream(path, offset, cb);
+                    });
+                }
+                else if(strat === 'cache') {
+                    datas[fd] = new CachedAccessStream((offset, params, cb) => {
+                        handlers.createReadStream(path, 0, cb);
+                    });
+                }
+
+                cb(0, fd);
+            }
         },
 
         release(path, fd, cb) {
