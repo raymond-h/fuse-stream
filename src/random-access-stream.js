@@ -3,27 +3,56 @@ import concat from 'concat-stream';
 import fs from 'fs';
 import { EventEmitter } from 'events';
 
-export class RandomAccessStream extends EventEmitter {
+export class RandomAccessStream {
     constructor(streamFn, params) {
-        super();
-        this.buffer = null;
         this.offset = 0;
+        this.streamEnded = false;
 
-        streamFn(this.offset, params)
-        .pipe(concat((buf) => {
-            this.buffer = buf;
-            this.emit('read-data');
-        }));
+        const onStreamEnd = ::this._onStreamEnd;
+
+        this._createStream = () => {
+            if(this.stream != null) {
+                this.stream.removeListener('end', onStreamEnd);
+                this.stream.end();
+            }
+
+            this.streamEnded = false;
+            this.stream = streamFn(this.offset, params);
+            this.stream.on('end', onStreamEnd);
+        };
+    }
+
+    _onStreamEnd() {
+        this.streamEnded = true;
+        this.stream.emit('readable');
+    }
+
+    end() {
+        if(this.stream != null) {
+            this.stream.end();
+        }
     }
 
     read(start, length) {
         return new Promise((resolve, reject) => {
-            if(this.buffer == null) {
-                this.once('read-data', () => {
-                    resolve(this._read(start, length));
-                });
+            if(this.stream == null || start !== this.offset) {
+                this.offset = start;
+                this._createStream();
             }
-            else resolve(this._read(start, length));
+
+            // get "length" bytes from stream
+            const loop = () => {
+                const res = this.stream.read(length);
+
+                if(res == null && !this.streamEnded)
+                    return this.stream.once('readable', loop);
+
+                resolve(res);
+
+                if(res != null) this.offset += res.length;
+            };
+
+            loop();
         });
     }
 
@@ -31,19 +60,3 @@ export class RandomAccessStream extends EventEmitter {
         return this.buffer.slice(start, start+length);
     }
 }
-
-const s = new RandomAccessStream((offset) => {
-    console.log('Reading file, offset: ' + offset);
-
-    return fs.createReadStream('.babelrc', { start: offset });
-});
-
-s.read(5, 10)
-.then((buf) => {
-    console.log(buf);
-
-    return s.read(0, 10);
-})
-.done((buf) => {
-    console.log(buf);
-});
