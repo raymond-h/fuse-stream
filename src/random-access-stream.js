@@ -46,8 +46,4 @@ export class RandomAccessStream {
             else loop();
         });
     }
-
-    _read(start, length) {
-        return this.buffer.slice(start, start+length);
-    }
 }
