@@ -5,17 +5,18 @@ export class RandomAccessStream {
         this.offset = 0;
         this.streamEnded = false;
 
-        const onStreamEnd = ::this._onStreamEnd;
+        this._createStream = (cb) => {
+            streamFn(this.offset, params, (err, stream) => {
+                if(err != null) {
+                    console.error(err.stack);
+                    return cb();
+                }
 
-        this._createStream = () => {
-            if(this.stream != null) {
-                this.stream.removeListener('end', onStreamEnd);
-                this.stream.end();
-            }
-
-            this.streamEnded = false;
-            this.stream = streamFn(this.offset, params);
-            this.stream.on('end', onStreamEnd);
+                this.streamEnded = false;
+                this.stream = stream;
+                this.stream.on('end', ::this._onStreamEnd);
+                cb();
+            });
         };
     }
 
@@ -24,19 +25,8 @@ export class RandomAccessStream {
         this.stream.emit('readable');
     }
 
-    end() {
-        if(this.stream != null) {
-            this.stream.end();
-        }
-    }
-
     read(start, length) {
-        return new Promise((resolve, reject) => {
-            if(this.stream == null || start !== this.offset) {
-                this.offset = start;
-                this._createStream();
-            }
-
+        return new Promise((resolve) => {
             // get "length" bytes from stream
             const loop = () => {
                 const res = this.stream.read(length);
@@ -49,7 +39,11 @@ export class RandomAccessStream {
                 if(res != null) this.offset += res.length;
             };
 
-            loop();
+            if(this.stream == null || start !== this.offset) {
+                this.offset = start;
+                this._createStream(loop);
+            }
+            else loop();
         });
     }
 
